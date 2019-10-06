@@ -1,0 +1,93 @@
+service: twitter-sentiment-analysis
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: ap-southeast-2
+
+plugins:
+  - serverless-step-functions
+  
+# Global Environment
+#  environment:
+#    variable1: value1
+
+custom:
+  raw-bucket: joelmacey-dl-raw
+  
+package:
+ exclude:
+   - .env
+   - env/**
+   - node_modules/**
+
+functions:
+  retrieveData:
+    handler: functions/retrieve_and_save.lambda_handler
+    role:
+      Fn::GetAtt: [ RetrieveDataRole, Arn ]
+    environment:
+      QUERY: '#melbourne'
+      BUCKET: ${self:custom.raw-bucket}
+      BUCKET_PATH: twitter
+      TABLE_NAME: ${opt:stage, self:provider.stage}-${self:service}-table
+      SECRET_NAME: twitter-api-auth
+      
+#     #   variable2: value2
+# stepFunctions:
+#   stateMachines:
+#     retrieveTweets:
+#       events:
+#         - schedule:
+#             rate: rate(10 minutes)
+#             enabled: true
+#       name: myStateMachine
+#       definition:
+#         Comment: "A Hello World example of the Amazon States Language using an AWS Lambda Function"
+#         StartAt: HelloWorld1
+#         States:
+#           HelloWorld1:
+#             Type: Task
+#             Resource:
+#               Fn::GetAtt: [hello, Arn]
+#             End: true
+#       dependsOn: CustomIamRole
+#       tags:
+#         Team: Atlantis
+#       alarms:
+#         topics:
+#           ok: arn:aws:sns:us-east-1:1234567890:NotifyMe
+#           alarm: arn:aws:sns:us-east-1:1234567890:NotifyMe
+#           insufficientData: arn:aws:sns:us-east-1:1234567890:NotifyMe
+#         metrics:
+#           - executionsTimeOut
+#           - executionsFailed
+#           - executionsAborted
+#           - metric: executionThrottled
+#             treatMissingData: breaching # overrides below default
+#         treatMissingData: ignore # optional
+#     hellostepfunc2:
+#       definition:
+#         StartAt: HelloWorld2
+#         States:
+#           HelloWorld2:
+#             Type: Task
+#             Resource:
+#               Fn::GetAtt: [hello, Arn]
+#             End: true
+#       dependsOn:
+#         - DynamoDBTable
+#         - KinesisStream
+#         - CUstomIamRole
+#       tags:
+#         Team: Atlantis
+#   activities:
+#     - myTask
+#     - yourTask
+#   validate: true # enable pre-deployment definition validation (disabled by default)
+
+
+resources:
+  - ${file(resources/retrieve_and_save_role.yml)}
+  - ${file(resources/dynamodb.yml)}

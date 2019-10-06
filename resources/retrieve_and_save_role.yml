@@ -1,0 +1,31 @@
+Resources: 
+  RetrieveDataRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: ${opt:stage, self:provider.stage}-${self:service}-retrieve-data-role
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: ${opt:stage, self:provider.stage}-${self:service}-retrieve-data-role-policy
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: "*"
+            Resource: "*"
+      Roles: 
+        - 
+          Ref: "RetrieveDataRole"
+  

@@ -1,0 +1,30 @@
+
+Resources: 
+  TwitterTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      TableName: ${opt:stage, self:provider.stage}-${self:service}-table
+      AttributeDefinitions: 
+        - 
+          AttributeName: "id"
+          AttributeType: "S"
+        - 
+          AttributeName: "creation_date"
+          AttributeType: "S"
+  
+      KeySchema: 
+        - 
+          AttributeName: "id"
+          KeyType: "HASH"
+        - 
+          AttributeName: "creation_date"
+          KeyType: "RANGE"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+Outputs:
+  TwitterTableName:
+    Description: The Name of the table used for storing the records
+    Value: !Ref TwitterTable
+    Export:
+      Name: table-name      
