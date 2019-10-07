@@ -7,7 +7,7 @@ table = os.getenv('TABLE')
 def add_partition(database, table, timestamp, location):
     client = boto3.client('athena')
     response = client.start_query_execution(
-        QueryString='ALTER TABLE {} ADD PARTITION load_timestamp = {}) LOCATION {}'.format(table, timestamp, location),
+        QueryString='ALTER TABLE {} ADD PARTITION (load_timestamp = {}) LOCATION {}'.format(table, timestamp, location),
         QueryExecutionContext={
             'Database': database
         },

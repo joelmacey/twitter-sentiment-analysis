@@ -22,22 +22,46 @@ package:
    - env/**
    - node_modules/**
 
+layers:
+  tweepy:
+    path: layers/ # required, path to layer contents on disk
+    name: ${self:provider.stage}-${self:service}-tweepy
+    compatibleRuntimes:
+      - python3.7
+
 functions:
   retrieveData:
     handler: functions/retrieve_and_save.lambda_handler
     role:
       Fn::GetAtt: [ RetrieveDataRole, Arn ]
+    layers:
+     - { Ref: TweepyLambdaLayer }
     environment:
       QUERY: '#melbourne'
       BUCKET: ${self:custom.raw-bucket}
       BUCKET_PATH: twitter
       TABLE_NAME: ${opt:stage, self:provider.stage}-${self:service}-table
       SECRET_NAME: twitter-api-auth
-      
-#     #   variable2: value2
+    events:
+      - schedule: cron(58 9 * * ? *)
+  addToCatalogue:
+    handler: functions/add_partition.lambda_handler
+    role:
+      Fn::GetAtt: [ RetrieveDataRole, Arn ]
+    environment:
+      DATABASE: '#melbourne'
+      TABLE: ${self:custom.raw-bucket}
+    events:
+      - s3:
+        bucket: ${self:custom.raw-bucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - prefix: twitter/
+          - suffix: .csv
+          
 # stepFunctions:
 #   stateMachines:
-#     retrieveTweets:
+#     TwitterSentimentAnalysis:
 #       events:
 #         - schedule:
 #             rate: rate(10 minutes)
@@ -47,10 +71,10 @@ functions:
 #         Comment: "A Hello World example of the Amazon States Language using an AWS Lambda Function"
 #         StartAt: HelloWorld1
 #         States:
-#           HelloWorld1:
+#           RetrieveData:
 #             Type: Task
 #             Resource:
-#               Fn::GetAtt: [hello, Arn]
+#               Fn::GetAtt: [retrieveData, Arn]
 #             End: true
 #       dependsOn: CustomIamRole
 #       tags:
@@ -67,7 +91,7 @@ functions:
 #           - metric: executionThrottled
 #             treatMissingData: breaching # overrides below default
 #         treatMissingData: ignore # optional
-#     hellostepfunc2:
+    # hellostepfunc2:
 #       definition:
 #         StartAt: HelloWorld2
 #         States:
