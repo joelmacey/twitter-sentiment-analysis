@@ -24,6 +24,7 @@ package:
 
 layers:
   tweepy:
+    # pip3 install tweepy -t layers/python 
     path: layers/ # required, path to layer contents on disk
     name: ${self:provider.stage}-${self:service}-tweepy
     compatibleRuntimes:
@@ -32,6 +33,7 @@ layers:
 functions:
   retrieveData:
     handler: functions/retrieve_and_save.lambda_handler
+    timeout: 120
     role:
       Fn::GetAtt: [ RetrieveDataRole, Arn ]
     layers:
@@ -58,7 +60,7 @@ functions:
         rules:
           - prefix: twitter/
           - suffix: .csv
-          
+
 # stepFunctions:
 #   stateMachines:
 #     TwitterSentimentAnalysis:
