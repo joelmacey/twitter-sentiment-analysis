@@ -7,6 +7,8 @@ import uuid
 import json
 import base64
 import os
+from pyarrow import csv as pqcsv
+import pyarrow.parquet as pq
 
 def get_secret(secret_name):
 
@@ -93,7 +95,7 @@ def create_timestamp():
     return timestamp
 
 def create_path_timestamp():
-    timestamp = datetime.utcnow().strftime('%Y/%m/%d')
+    timestamp = datetime.utcnow().strftime('year=%Y/month=%m/day=%d')
     return timestamp
 
 def to_dynamodb(data, table_name):
@@ -109,7 +111,7 @@ def to_dynamodb(data, table_name):
             }
         )
 
-def to_file(data, wd):
+def to_csv_file(data, wd):
     timestamp = create_timestamp()
     filename = '{}.csv'.format(timestamp)
     with open ('{}/{}'.format(wd, filename), 'w', newline='') as csvfile:
@@ -122,6 +124,14 @@ def to_file(data, wd):
     csvfile.close()
     return filename
 
+def to_parquet_file(filename, wd):
+    csv_file = '{}/{}'.format(wd,filename)
+    table = pqcsv.read_csv(csv_file)
+    pq_filename = filename.split('.')[0]
+    pq.write_table(table, '{}.parquet'.format(pq_filename))
+    return '{}.parquet'.format(pq_filename)
+
+
 def send_to_s3(bucket_path, wd, filename, bucket):
     client = boto3.client('s3')
     path = create_path_timestamp()
@@ -132,9 +142,16 @@ def send_to_s3(bucket_path, wd, filename, bucket):
     )
     return response
 
+def remove_file(wd,filename):
+    if os.path.exists('{}/{}'.format(wd,filename)):
+        os.remove('{}/{}'.format(wd,filename))
+        return 'Deleted Successfully'
+    else:
+        return 'Failed to delete file'
+
 def lambda_handler(event, context):
 
-    wd = '/tmp' # tmp for lambda
+    wd = './' # tmp for lambda
     query = os.getenv('QUERY')
     bucket = os.getenv('BUCKET')
     bucket_path = os.getenv('BUCKET_PATH')
@@ -143,8 +160,11 @@ def lambda_handler(event, context):
     api = get_auth(secret_name)
     since_date=create_since_timestamp()
     data = get_data(api, query, since_date)
-    filename = to_file(data, wd)
+    filename = to_csv_file(data, wd)
+    pq_filename = to_parquet_file(filename, wd)
     to_dynamodb(data, table_name)
-    response = send_to_s3(bucket_path, wd, filename, bucket)
+    response = send_to_s3(bucket_path, wd, pq_filename, bucket)
+    remove_file(wd,filename) # original csv
+    remove_file(wd,pq_filename) # new parquet
     
     return response

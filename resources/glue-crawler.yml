@@ -1,0 +1,51 @@
+Resources:
+  GlueCrawlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${opt:stage, self:provider.stage}-${self:service}-glue-crawler-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        -
+          PolicyName:  ${opt:stage, self:provider.stage}-${self:service}-glue-crawler-role-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "*"
+                Resource: "*"
+  
+  MyClassifier:
+    Type: AWS::Glue::Classifier
+    Properties:
+      GrokClassifier:
+        Name: "CrawlerClassifier"
+        Classification: "wikiData"
+        GrokPattern: "%{NOTSPACE:language} %{NOTSPACE:page_title} %{NUMBER:hits:long} %{NUMBER:retrieved_size:long}"
+
+  MyCrawler2:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Name: "testcrawler1"
+      Role: !GetAtt MyRole.Arn
+      DatabaseName: ${self:custom.glue-database}
+      Classifiers:
+        - !Ref MyClassifier
+      Targets:
+        S3Targets:
+          - Path: !Ref MyS3Bucket
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(0/10 * ? * MON-FRI *)"

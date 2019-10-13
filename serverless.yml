@@ -8,6 +8,7 @@ provider:
 
 plugins:
   - serverless-step-functions
+  - serverless-pseudo-parameters
   
 # Global Environment
 #  environment:
@@ -15,6 +16,7 @@ plugins:
 
 custom:
   raw-bucket: joelmacey-dl-raw
+  glue-database: raw-dl
   
 package:
  exclude:
@@ -51,8 +53,8 @@ functions:
     role:
       Fn::GetAtt: [ RetrieveDataRole, Arn ]
     environment:
-      DATABASE: '#melbourne'
-      TABLE: ${self:custom.raw-bucket}
+      DATABASE: ${self:custom.glue-database}
+      TABLE: ${opt:stage, self:provider.stage}-${self:service}-table
     events:
       - s3:
         bucket: ${self:custom.raw-bucket}
@@ -117,3 +119,4 @@ functions:
 resources:
   - ${file(resources/retrieve_and_save_role.yml)}
   - ${file(resources/dynamodb.yml)}
+  - ${file(resources/glue-table.yml)}
