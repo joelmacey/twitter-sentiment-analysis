@@ -119,4 +119,5 @@ functions:
 resources:
   - ${file(resources/retrieve_and_save_role.yml)}
   - ${file(resources/dynamodb.yml)}
-  - ${file(resources/glue-table.yml)}
+  - ${file(resources/glue-crawler.yml)}
+  

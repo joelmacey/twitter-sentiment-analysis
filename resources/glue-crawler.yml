@@ -24,28 +24,18 @@ Resources:
                 Effect: "Allow"
                 Action: "*"
                 Resource: "*"
-  
-  MyClassifier:
-    Type: AWS::Glue::Classifier
-    Properties:
-      GrokClassifier:
-        Name: "CrawlerClassifier"
-        Classification: "wikiData"
-        GrokPattern: "%{NOTSPACE:language} %{NOTSPACE:page_title} %{NUMBER:hits:long} %{NUMBER:retrieved_size:long}"
 
-  MyCrawler2:
+  TwitterCrawler:
     Type: AWS::Glue::Crawler
     Properties:
-      Name: "testcrawler1"
-      Role: !GetAtt MyRole.Arn
+      Name: ${opt:stage, self:provider.stage}-${self:service}-glue-crawler
+      Role: 
+        Fn::GetAtt: [ GlueCrawlerRole, Arn ]
+        
       DatabaseName: ${self:custom.glue-database}
-      Classifiers:
-        - !Ref MyClassifier
       Targets:
         S3Targets:
-          - Path: !Ref MyS3Bucket
+          - Path: ${self:custom.raw-bucket}/twitter/
       SchemaChangePolicy:
         UpdateBehavior: "UPDATE_IN_DATABASE"
         DeleteBehavior: "LOG"
-      Schedule:
-        ScheduleExpression: "cron(0/10 * ? * MON-FRI *)"
